@@ -28,7 +28,7 @@
 
 		#instructions {
 			display: none;
-			text-align: center;
+			text-align: left;
 			font-size: 36px;
 			cursor: pointer;
 		}
@@ -57,10 +57,9 @@
 		<div id="infoWrapper">
 			<div id="instructions" style="font-size:36px">
 				Click here to play
-				<p>
-					To move: hit W key or press left mouse button<br />
-					Look around: Just move the MOUSE
-				</p>
+				<p>To move: hit W key or click</p>
+				<p>To look around: Just move the MOUSE</p>
+				<p>To stop: Hit Scape key or double click</p>
 			</div>
 			
 			<div id="loading-bar">
@@ -215,7 +214,7 @@
 		controls.addEventListener('unlock', function () {
 
 			blocker.style.display = 'block';
-			instructions.style.display = '';
+			instructions.style.display = 'block';
 
 		});
 
@@ -251,6 +250,10 @@
 
 		instructions.addEventListener('click', () => {
 			controls.lock();
+		});
+
+		document.addEventListener("dblclick", (event) => {
+			controls.unlock();
 		});
 
 		
@@ -323,6 +326,7 @@
 				if (onObject) {
 					/* controls.moveRight(velocity.x * delta * 2); */
 					controls.moveForward(velocity.z * delta * 2);
+					onObject = false;
 				} else {
 					/* controls.moveRight(- velocity.x * delta); */
 					controls.moveForward(- velocity.z * delta);
