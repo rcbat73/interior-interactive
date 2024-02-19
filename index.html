@@ -2,45 +2,72 @@
 <html lang="en">
 
 <head>
-	<title>three.js - pointerlock controls</title>
+	<title>Interior -interactive</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style>
 		#blocker {
-			position: absolute;
+			position: absolute;			
 			width: 100%;
 			height: 100%;
+			color: white;
 			background-color: rgba(0, 0, 0, 0.5);
+			font-family: 'Arial';
 		}
 
-		#instructions {
+		#infoWrapper {
 			width: 100%;
-			height: 100%;
-
+			height: 100%;			
 			display: flex;
 			flex-direction: column;
 			justify-content: center;
 			align-items: center;
-
 			text-align: center;
 			font-size: 14px;
+		}
+
+		#instructions {
+			display: none;
+			text-align: center;
+			font-size: 36px;
 			cursor: pointer;
+		}
+
+		#instructions > p {
+			font-size: 16px;
+		}
+
+		#loading-bar {
+			width: 100px;
+			height: 15px;
+			opacity: 0;
+		}
+
+		#loading-bar > div {
+			width: 1%;
+			height: 100%;
+			border-radius: 3px;
+			background-color: cyan;			
 		}
 	</style>
 </head>
 
 <body>
 	<div id="blocker">
-		<div id="instructions">
-			<p id="test" style="font-size:36px">
-				Click to play
-			</p>
-			<p>
-				Move: WASD<br />
-				Jump: SPACE<br />
-				Look: MOUSE
-			</p>
-		</div>
+		<div id="infoWrapper">
+			<div id="instructions" style="font-size:36px">
+				Click here to play
+				<p>
+					To move: hit W key or press left mouse button<br />
+					Look around: Just move the MOUSE
+				</p>
+			</div>
+			
+			<div id="loading-bar">
+				<p>Loading...</p>
+				<div></div>
+			</div>						
+		</div>		
 	</div>
 	<script type="importmap">
 		{
@@ -168,6 +195,8 @@
 
 		const blocker = document.getElementById('blocker');
 		const instructions = document.getElementById('instructions');
+		const loadingBarWrapper = document.querySelector('#loading-bar');
+		const loadingBar = loadingBarWrapper.children[1];
 
 		window.userData = THREE;
 
@@ -213,7 +242,14 @@
 
 		document.addEventListener('keydown', onKeyDown);
 		document.addEventListener('keyup', onKeyUp);
-		document.addEventListener("click", () => {
+		document.addEventListener("mousedown", function(event){
+			moveForward = true;
+		});
+		document.addEventListener("mouseup", function(event){
+			moveForward = false;
+		});
+
+		instructions.addEventListener('click', () => {
 			controls.lock();
 		});
 
@@ -248,9 +284,14 @@
 				});
 
 				scene.add(gltf.scene);
+				loadingBarWrapper.style.opacity = '0';
+				instructions.style.display = 'block';
 			},
 			(xhr) => {
+				loadingBarWrapper.style.opacity = '1';
 				console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+				const percent = (xhr.loaded / xhr.total) * 100;
+				loadingBar.style.width = `${percent}%`;
 			},
 			(error) => {
 				console.log(error);
@@ -276,7 +317,7 @@
 				/* direction.x = Number(moveRight) - Number(moveLeft); */
 				direction.normalize(); // this ensures consistent movements in all directions
 
-				if (moveForward/*  || moveBackward */) velocity.z -= direction.z * 100.0 * delta;
+				if (moveForward/*  || moveBackward */) velocity.z -= direction.z * 10.0 * delta;
 				/* if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta; */
 				
 				if (onObject) {
