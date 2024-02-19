@@ -58,6 +58,7 @@
 		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 		import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+		import { DRACOLoader } from 'three/addons/loaders/DRACOLoader'
 		import { OBB } from 'three/addons/math/OBB'
 
 		let camera, scene, renderer, controls;
@@ -125,134 +126,136 @@
 
 		window.addEventListener('resize', onWindowResize);
 
-			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
-			camera.position.x = -0.57;
-			camera.position.y = 1.2;
-			camera.position.z = 1.2;
+		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
+		camera.position.x = -0.57;
+		camera.position.y = 1.2;
+		camera.position.z = 1.2;
 
-			const size = 0.5
+		const size = 0.5
 
-			console.log(camera);
-
-			cameraBBox = new OBB();
-			cameraBBox.center = camera.position;
-			cameraBBox.halfSize = new THREE.Vector3(size, 0, size);
-			const vec = new THREE.Vector3();
-			cameraBBox.getSize(vec);
-			console.log(vec);
+		cameraBBox = new OBB();
+		cameraBBox.center = camera.position;
+		cameraBBox.halfSize = new THREE.Vector3(size, 0, size);
+		const vec = new THREE.Vector3();
+		cameraBBox.getSize(vec);
 
 
 
 
-			scene = new THREE.Scene();
-			scene.background = new THREE.Color(0xffffff);
+		scene = new THREE.Scene();
+		scene.background = new THREE.Color(0xffffff);
 
-			const light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 1);
-			light.position.set(-0.5, 5, 0);
-			scene.add(light);			
+		const light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 1);
+		light.position.set(-0.5, 5, 0);
+		scene.add(light);			
 
-			// light
+		// light
 
-			let pointLight = new THREE.SpotLight(0xFFFFFF, 210, 100);
-    		pointLight.position.set(-10, 5.95, 1.5);
-			pointLight.rotation.z = 50 * Math.PI / 180;
-			pointLight.castShadow = true;
-            pointLight.shadow.mapSize.width = 512
-            pointLight.shadow.mapSize.height = 512
-            pointLight.shadow.radius = 5
-			pointLight.shadow.bias = 0
-			pointLight.angle = 0.25;
-			pointLight.penumbra = 0.3;
-			pointLight.shadow.bias = -0.0001
-			scene.add(pointLight);			
+		let pointLight = new THREE.SpotLight(0xFFFFFF, 210, 100);
+		pointLight.position.set(-10, 5.95, 1.5);
+		pointLight.rotation.z = 50 * Math.PI / 180;
+		pointLight.castShadow = true;
+		pointLight.shadow.mapSize.width = 512
+		pointLight.shadow.mapSize.height = 512
+		pointLight.shadow.radius = 5
+		pointLight.shadow.bias = 0
+		pointLight.angle = 0.25;
+		pointLight.penumbra = 0.3;
+		pointLight.shadow.bias = -0.0001
+		scene.add(pointLight);			
 
-			controls = new PointerLockControls(camera, document.body);
+		controls = new PointerLockControls(camera, document.body);
 
-			const blocker = document.getElementById('blocker');
-			const instructions = document.getElementById('instructions');
+		const blocker = document.getElementById('blocker');
+		const instructions = document.getElementById('instructions');
 
-			window.userData = THREE;
+		window.userData = THREE;
 
-			function collisionDetection() {
-				let res = meshesBBox.filter((mesh) => mesh.userData.obb.intersectsOBB(cameraBBox));
-				return res.length > 0;
+		function collisionDetection() {
+			let res = meshesBBox.filter((mesh) => mesh.userData.obb.intersectsOBB(cameraBBox));
+			return res.length > 0;
+		}
+
+		controls.addEventListener('lock', function () {
+
+			instructions.style.display = 'none';
+			blocker.style.display = 'none';
+
+		});
+
+		controls.addEventListener('unlock', function () {
+
+			blocker.style.display = 'block';
+			instructions.style.display = '';
+
+		});
+
+		scene.add(controls.getObject());
+
+		const onKeyDown = function (event) {
+			switch (event.code) {					
+				case 'ArrowUp':
+				case 'KeyW':
+					moveForward = true;
+					break;
 			}
 
-			controls.addEventListener('lock', function () {
+		};
 
-				instructions.style.display = 'none';
-				blocker.style.display = 'none';
+		const onKeyUp = function (event) {
+			switch (event.code) {
+				case 'ArrowUp':
+				case 'KeyW':
+					moveForward = false;
+					break;
+			}
+		};
 
-			});
+		document.addEventListener('keydown', onKeyDown);
+		document.addEventListener('keyup', onKeyUp);
+		document.addEventListener("click", () => {
+			controls.lock();
+		});
 
-			controls.addEventListener('unlock', function () {
+		
+		
 
-				blocker.style.display = 'block';
-				instructions.style.display = '';
+		const loader = new GLTFLoader();
+		const draco = new DRACOLoader();
+		draco.setDecoderPath('/draco/');
+		loader.setDRACOLoader( draco );
+		
+		loader.load(
+			'assets/models/interior.glb',
+			function (gltf) {
+				gltf.scene.children.forEach(child => {						
+					if(child.isMesh){
+						child.receiveShadow = true;
+						child.castShadow = true;
+					}
+					const boundary = objects.filter(name => {
+						return child.name.toLowerCase().includes(name.toLowerCase());
+					})
+					
+					if (boundary.length) {
+						const objBBox = new THREE.Box3().setFromObject(child, true);
+						let obb = new OBB();
+						obb = obb.fromBox3(objBBox);
+						child.userData.obb = obb;
+						meshesBBox.push(child);
+					}
 
-			});
+				});
 
-			scene.add(controls.getObject());
-
-			const onKeyDown = function (event) {
-				switch (event.code) {					
-					case 'ArrowUp':
-					case 'KeyW':
-						moveForward = true;
-						break;
-				}
-
-			};
-
-			const onKeyUp = function (event) {
-				switch (event.code) {
-					case 'ArrowUp':
-					case 'KeyW':
-						moveForward = false;
-						break;
-				}
-			};
-
-			document.addEventListener('keydown', onKeyDown);
-			document.addEventListener('keyup', onKeyUp);
-			document.addEventListener("click", () => {
-				controls.lock();
-			});
-
-			const loader = new GLTFLoader();
-			loader.setCrossOrigin( 'anonymous' );
-			loader.load(
-				'assets/models/interior.glb',
-				function (gltf) {
-					gltf.scene.children.forEach(child => {						
-						if(child.isMesh){
-							child.receiveShadow = true;
-							child.castShadow = true;
-							console.log(child)
-						}
-						const boundary = objects.filter(name => {
-							return child.name.toLowerCase().includes(name.toLowerCase());
-						})
-						
-						if (boundary.length) {
-							const objBBox = new THREE.Box3().setFromObject(child, true);
-							let obb = new OBB();
-							obb = obb.fromBox3(objBBox);
-							child.userData.obb = obb;
-							meshesBBox.push(child);
-						}
-
-					});
-
-					scene.add(gltf.scene);
-				},
-				(xhr) => {
-					console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-				},
-				(error) => {
-					console.log(error);
-				}
-			);
+				scene.add(gltf.scene);
+			},
+			(xhr) => {
+				console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+			},
+			(error) => {
+				console.log(error);
+			}
+		);
 
 		
 
@@ -264,23 +267,23 @@
 
 				const delta = (time - prevTime) / 1000;
 
-				velocity.x -= velocity.x * 10.0 * delta;
+				/* velocity.x -= velocity.x * 10.0 * delta; */
 				velocity.z -= velocity.z * 10.0 * delta;
 
 				velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
 
-				direction.z = Number(moveForward) - Number(moveBackward);
-				direction.x = Number(moveRight) - Number(moveLeft);
+				direction.z = Number(moveForward)// - Number(moveBackward);
+				/* direction.x = Number(moveRight) - Number(moveLeft); */
 				direction.normalize(); // this ensures consistent movements in all directions
 
-				if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
-				if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+				if (moveForward/*  || moveBackward */) velocity.z -= direction.z * 100.0 * delta;
+				/* if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta; */
 				
 				if (onObject) {
-					controls.moveRight(velocity.x * delta * 2);
+					/* controls.moveRight(velocity.x * delta * 2); */
 					controls.moveForward(velocity.z * delta * 2);
 				} else {
-					controls.moveRight(- velocity.x * delta);
+					/* controls.moveRight(- velocity.x * delta); */
 					controls.moveForward(- velocity.z * delta);
 				}
 			}
