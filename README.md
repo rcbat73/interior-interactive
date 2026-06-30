@@ -8,4 +8,12 @@ The long-term vision also included interior customization features, allowing use
 
 ## Live Demo
 
+Explore the application directly in your browser:
+
 https://rcbat73.github.io/interactive-home-walkthrough/
+
+## Demo Video
+
+Download the demonstration video:
+
+[Interactive Home Walkthrough Demo](./media/interactive-home-walkthrough.mp4)
